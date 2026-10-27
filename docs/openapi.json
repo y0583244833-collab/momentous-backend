@@ -1,0 +1,3592 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Momenta API — לוח זיכרונות משותף",
+    "version": "1.0.0",
+    "description": "שרת לאפליקציית לוח זיכרונות משותף לקבוצות.\n\n**איך בודקים כתובת מוגנת:**\n1. פתחי את `POST /api/auth/login`, לחצי **Try it out**, ושלחי מייל וסיסמה.\n2. העתיקי את הערך של `token` מהתשובה.\n3. לחצי על הכפתור **Authorize** למעלה, הדביקי את ה־Token (בלי המילה Bearer) ולחצי Authorize.\n4. עכשיו כל הכתובות עם המנעול יישלחו עם ה־Token.\n\nבלי Token מקבלים **401**. עם Token של משתמש שאין לו הרשאה מקבלים **403**.\n\nכל שגיאה מוחזרת במבנה: `{ \"error\": { \"code\", \"message\", \"details?\" } }`."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "השרת הנוכחי"
+    }
+  ],
+  "tags": [
+    {
+      "name": "System",
+      "description": "בדיקת בריאות ורשימות בחירה"
+    },
+    {
+      "name": "Auth",
+      "description": "הרשמה, התחברות ומשתמש מחובר"
+    },
+    {
+      "name": "Profile",
+      "description": "הפרופיל שלי"
+    },
+    {
+      "name": "Images",
+      "description": "העלאה והצגה של תמונות"
+    },
+    {
+      "name": "Boards",
+      "description": "לוחות, הצטרפות וחברים (משתמש רגיל)"
+    },
+    {
+      "name": "Invitations",
+      "description": "הזמנות ללוח לפי כתובת מייל, ומונה לפעמון"
+    },
+    {
+      "name": "Memories",
+      "description": "זיכרונות ולייקים"
+    },
+    {
+      "name": "Admin",
+      "description": "מסכי בעל המערכת בלבד"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "בדיקת בריאות השרת",
+        "description": "בודק שהשרת עובד ושיש חיבור למסד הנתונים. ציבורי.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "השרת ומסד הנתונים תקינים",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                },
+                "example": {
+                  "status": "ok",
+                  "database": "ok",
+                  "time": "2026-10-22T20:00:00.000Z"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "אין חיבור למסד הנתונים",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                },
+                "example": {
+                  "status": "error",
+                  "database": "unreachable",
+                  "time": "2026-10-22T20:00:00.000Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/options": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "רשימות הבחירה: סוגי זיכרונות וסוגי אירועים",
+        "description": "מחזיר את הערכים האפשריים ואת השם שלהם בעברית, לבניית תיבות בחירה בטפסים. ציבורי.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "הרשימות",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Options"
+                },
+                "example": {
+                  "memoryTypes": [
+                    {
+                      "value": "PHOTO",
+                      "label": "תמונה"
+                    },
+                    {
+                      "value": "PLACE",
+                      "label": "מקום"
+                    },
+                    {
+                      "value": "SUMMARY",
+                      "label": "סיכום"
+                    },
+                    {
+                      "value": "JOKE",
+                      "label": "בדיחה קבוצתית"
+                    },
+                    {
+                      "value": "QUOTE",
+                      "label": "ציטוט"
+                    }
+                  ],
+                  "eventTypes": [
+                    {
+                      "value": "TRIP",
+                      "label": "טיול"
+                    },
+                    {
+                      "value": "GRADUATION",
+                      "label": "מסיבת סיום"
+                    },
+                    {
+                      "value": "CAMP",
+                      "label": "קייטנה"
+                    },
+                    {
+                      "value": "FAMILY",
+                      "label": "שבת או אירוע משפחתי"
+                    },
+                    {
+                      "value": "OTHER",
+                      "label": "אחר"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "הרשמה",
+        "description": "יוצר משתמש רגיל ומחזיר Token, כך שהמשתמש מחובר מיד. אי אפשר להירשם כמנהל. ציבורי.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              },
+              "example": {
+                "fullName": "נועה לוי",
+                "email": "noa@example.com",
+                "password": "Demo1234!"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "נרשם בהצלחה",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                },
+                "example": {
+                  "token": "eyJhbGciOiJIUzI1NiIs...",
+                  "user": {
+                    "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                    "fullName": "נועה לוי",
+                    "email": "noa@example.com",
+                    "role": "USER",
+                    "avatarImageId": null,
+                    "avatarUrl": null,
+                    "isBlocked": false,
+                    "createdAt": "2026-10-01T10:00:00.000Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "התחברות",
+        "description": "מחזיר JWT Access Token בתוקף מוגבל (ברירת מחדל: יום אחד). ציבורי.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              },
+              "example": {
+                "email": "noa@example.com",
+                "password": "Demo1234!"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "התחברות הצליחה",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                },
+                "example": {
+                  "token": "eyJhbGciOiJIUzI1NiIs...",
+                  "user": {
+                    "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                    "fullName": "נועה לוי",
+                    "email": "noa@example.com",
+                    "role": "USER",
+                    "avatarImageId": null,
+                    "avatarUrl": null,
+                    "isBlocked": false,
+                    "createdAt": "2026-10-01T10:00:00.000Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "description": "מייל או סיסמה שגויים",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INVALID_CREDENTIALS",
+                    "message": "המייל או הסיסמה שגויים"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "החשבון חסום",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "USER_BLOCKED",
+                    "message": "החשבון חסום על ידי בעל המערכת"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "מי אני",
+        "description": "מחזיר את פרטי המשתמש המחובר לפי ה־Token. כל משתמש מחובר.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "המשתמש המחובר",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                },
+                "example": {
+                  "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                  "fullName": "נועה לוי",
+                  "email": "noa@example.com",
+                  "role": "USER",
+                  "avatarImageId": null,
+                  "avatarUrl": null,
+                  "isBlocked": false,
+                  "createdAt": "2026-10-01T10:00:00.000Z"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/users/me": {
+      "patch": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "עריכת השם ותמונת הפרופיל שלי",
+        "description": "כדי להחליף תמונה: קודם מעלים אותה ב־`POST /api/images`, ואז שולחים כאן את ה־id שלה. `null` מוחק את התמונה. כל משתמש מחובר.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileRequest"
+              },
+              "example": {
+                "fullName": "נועה לוי-כהן",
+                "avatarImageId": "5e2a7c9d-3333-4b1c-9d2e-fedcbafedcba"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "הפרופיל עודכן",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                },
+                "example": {
+                  "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                  "fullName": "נועה לוי",
+                  "email": "noa@example.com",
+                  "role": "USER",
+                  "avatarImageId": null,
+                  "avatarUrl": null,
+                  "isBlocked": false,
+                  "createdAt": "2026-10-01T10:00:00.000Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/users/me/password": {
+      "patch": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "שינוי סיסמה",
+        "description": "צריך את הסיסמה הנוכחית ואת החדשה. ה־Token הקיים ממשיך לעבוד. כל משתמש מחובר.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              },
+              "example": {
+                "currentPassword": "Demo1234!",
+                "newPassword": "NewPass5678!"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "הפעולה הצליחה (אין גוף לתשובה)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/images": {
+      "post": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "העלאת תמונה",
+        "description": "שולחים קובץ בשדה `file` (multipart/form-data). JPG, PNG או WEBP, עד 2MB. מחזיר `id` שמצרפים לזיכרון, ללוח או לפרופיל. משתמש רגיל בלבד.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "קובץ התמונה"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "התמונה נשמרה",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageUpload"
+                },
+                "example": {
+                  "id": "5e2a7c9d-3333-4b1c-9d2e-fedcbafedcba",
+                  "url": "/api/images/5e2a7c9d-3333-4b1c-9d2e-fedcbafedcba",
+                  "mimeType": "image/jpeg",
+                  "sizeBytes": 245123,
+                  "contentHash": "3f786850e387550fdab836ed7e6dc881de23001b6c6cfc4dfdfea4b0d0c5f0aa"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/images/{id}": {
+      "get": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "הצגת תמונה",
+        "description": "מחזיר את קובץ התמונה עצמו, כך שאפשר לשים את הכתובת ישירות ב־`<img src>`. ציבורי, כי תגית img לא שולחת Token. המזהה אקראי ולא ניתן לניחוש.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "מזהה התמונה",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "5e2a7c9d-3333-4b1c-9d2e-fedcbafedcba"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "קובץ התמונה",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/boards": {
+      "get": {
+        "tags": [
+          "Boards"
+        ],
+        "summary": "הלוחות שלי",
+        "description": "רק לוחות שהמשתמש חבר בהם (פתח או הצטרף). אחרי הצטרפות הלוח מופיע כאן תמיד, ונכנסים אליו בלי קוד. משתמש רגיל בלבד.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "חיפוש בשם ובתיאור הלוח",
+            "schema": {
+              "type": "string"
+            },
+            "example": "טיול"
+          },
+          {
+            "name": "eventType",
+            "in": "query",
+            "required": false,
+            "description": "סינון לפי סוג אירוע",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "TRIP",
+                "GRADUATION",
+                "CAMP",
+                "FAMILY",
+                "OTHER"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "תאריך אירוע מ־ (YYYY-MM-DD)",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-01-01"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "תאריך אירוע עד (YYYY-MM-DD)",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-12-31"
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "description": "created = לוחות שפתחתי, joined = לוחות שהצטרפתי אליהם",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "created",
+                "joined"
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "מיון",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "eventDate",
+                "name",
+                "lastActivity"
+              ],
+              "default": "lastActivity"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "כיוון המיון",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "מספר העמוד (מתחיל ב־1)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "כמה פריטים בעמוד (עד 50)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "רשימת הלוחות",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardPage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": "c2d4e6f8-1111-4a2b-9c3d-123456789abc",
+                      "name": "טיול שנתי י\"ב",
+                      "description": "שלושה ימים בדרום",
+                      "eventType": "TRIP",
+                      "eventTypeLabel": "טיול",
+                      "eventDate": "2026-04-14",
+                      "coverImageId": null,
+                      "coverImageUrl": null,
+                      "creator": {
+                        "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                        "fullName": "נועה לוי",
+                        "avatarUrl": null
+                      },
+                      "isCreator": true,
+                      "joinCode": "K7P2QX",
+                      "membersCount": 3,
+                      "memoriesCount": 5,
+                      "lastActivityAt": "2026-10-20T18:30:00.000Z",
+                      "createdAt": "2026-10-01T10:05:00.000Z",
+                      "updatedAt": "2026-10-01T10:05:00.000Z"
+                    }
+                  ],
+                  "page": 1,
+                  "limit": 20,
+                  "total": 1,
+                  "totalPages": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Boards"
+        ],
+        "summary": "פתיחת לוח חדש",
+        "description": "מי שפותח את הלוח נרשם אוטומטית כחבר, ומקבל את קוד ההצטרפות. משתמש רגיל בלבד. אפשר לשלוח גם `emails` (לא חובה, עד 20 כתובות) כדי להזמין משתתפים כבר עכשיו. ההזמנות נוצרות באותם כללים בדיוק כמו ב־`POST /api/boards/{id}/invitations`, והלוח וההזמנות נשמרים יחד או לא נשמרים בכלל. אף אחד לא מצטרף ללוח עד שהוא מאשר. כשנשלחו כתובות, התשובה כוללת גם את השדה `invitations`. בלי `emails` או עם מערך ריק, הכתובת עובדת בדיוק כמו קודם.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBoardRequest"
+              },
+              "example": {
+                "name": "טיול שנתי י\"ב",
+                "description": "שלושה ימים בדרום",
+                "eventType": "TRIP",
+                "eventDate": "2026-04-14",
+                "coverImageId": null,
+                "emails": [
+                  "yossi@example.com",
+                  "new.friend@example.com"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "הלוח נוצר",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardWithInvitations"
+                },
+                "example": {
+                  "id": "c2d4e6f8-1111-4a2b-9c3d-123456789abc",
+                  "name": "טיול שנתי י\"ב",
+                  "description": "שלושה ימים בדרום",
+                  "eventType": "TRIP",
+                  "eventTypeLabel": "טיול",
+                  "eventDate": "2026-04-14",
+                  "coverImageId": null,
+                  "coverImageUrl": null,
+                  "creator": {
+                    "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                    "fullName": "נועה לוי",
+                    "avatarUrl": null
+                  },
+                  "isCreator": true,
+                  "joinCode": "K7P2QX",
+                  "membersCount": 3,
+                  "memoriesCount": 5,
+                  "lastActivityAt": "2026-10-20T18:30:00.000Z",
+                  "createdAt": "2026-10-01T10:05:00.000Z",
+                  "updatedAt": "2026-10-01T10:05:00.000Z",
+                  "invitations": {
+                    "invitedCount": 2,
+                    "results": [
+                      {
+                        "email": "yossi@example.com",
+                        "result": "INVITED",
+                        "invitationId": "7b3d9e1f-4444-4c2d-8e3f-0123456789ab"
+                      },
+                      {
+                        "email": "new.friend@example.com",
+                        "result": "INVITED",
+                        "invitationId": "8c4e0f2a-5555-4d3e-9f40-123456789abc"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/boards/join": {
+      "post": {
+        "tags": [
+          "Boards"
+        ],
+        "summary": "הצטרפות ללוח עם קוד",
+        "description": "מקלידים את הקוד פעם אחת. אחרי זה הלוח נשמר ברשימת \"הלוחות שלי\". משתמש רגיל בלבד.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinBoardRequest"
+              },
+              "example": {
+                "code": "K7P2QX"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "הצטרפת ללוח",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Board"
+                },
+                "example": {
+                  "id": "c2d4e6f8-1111-4a2b-9c3d-123456789abc",
+                  "name": "טיול שנתי י\"ב",
+                  "description": "שלושה ימים בדרום",
+                  "eventType": "TRIP",
+                  "eventTypeLabel": "טיול",
+                  "eventDate": "2026-04-14",
+                  "coverImageId": null,
+                  "coverImageUrl": null,
+                  "creator": {
+                    "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                    "fullName": "נועה לוי",
+                    "avatarUrl": null
+                  },
+                  "isCreator": false,
+                  "joinCode": null,
+                  "membersCount": 3,
+                  "memoriesCount": 5,
+                  "lastActivityAt": "2026-10-20T18:30:00.000Z",
+                  "createdAt": "2026-10-01T10:05:00.000Z",
+                  "updatedAt": "2026-10-01T10:05:00.000Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/boards/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "מזהה הלוח",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "example": "c2d4e6f8-1111-4a2b-9c3d-123456789abc"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Boards"
+        ],
+        "summary": "פרטי לוח",
+        "description": "חברי הלוח ובעל המערכת. `joinCode` מוחזר רק לפותח הלוח (לאחרים: null).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "פרטי הלוח",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Board"
+                },
+                "example": {
+                  "id": "c2d4e6f8-1111-4a2b-9c3d-123456789abc",
+                  "name": "טיול שנתי י\"ב",
+                  "description": "שלושה ימים בדרום",
+                  "eventType": "TRIP",
+                  "eventTypeLabel": "טיול",
+                  "eventDate": "2026-04-14",
+                  "coverImageId": null,
+                  "coverImageUrl": null,
+                  "creator": {
+                    "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                    "fullName": "נועה לוי",
+                    "avatarUrl": null
+                  },
+                  "isCreator": true,
+                  "joinCode": "K7P2QX",
+                  "membersCount": 3,
+                  "memoriesCount": 5,
+                  "lastActivityAt": "2026-10-20T18:30:00.000Z",
+                  "createdAt": "2026-10-01T10:05:00.000Z",
+                  "updatedAt": "2026-10-01T10:05:00.000Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Boards"
+        ],
+        "summary": "עריכת פרטי לוח",
+        "description": "רק מי שפתח את הלוח. שולחים רק את השדות שרוצים לשנות.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBoardRequest"
+              },
+              "example": {
+                "name": "טיול שנתי י\"ב - דרום",
+                "eventDate": "2026-04-15"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "הלוח עודכן",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Board"
+                },
+                "example": {
+                  "id": "c2d4e6f8-1111-4a2b-9c3d-123456789abc",
+                  "name": "טיול שנתי י\"ב",
+                  "description": "שלושה ימים בדרום",
+                  "eventType": "TRIP",
+                  "eventTypeLabel": "טיול",
+                  "eventDate": "2026-04-14",
+                  "coverImageId": null,
+                  "coverImageUrl": null,
+                  "creator": {
+                    "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                    "fullName": "נועה לוי",
+                    "avatarUrl": null
+                  },
+                  "isCreator": true,
+                  "joinCode": "K7P2QX",
+                  "membersCount": 3,
+                  "memoriesCount": 5,
+                  "lastActivityAt": "2026-10-20T18:30:00.000Z",
+                  "createdAt": "2026-10-01T10:05:00.000Z",
+                  "updatedAt": "2026-10-01T10:05:00.000Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Boards"
+        ],
+        "summary": "מחיקת לוח",
+        "description": "מי שפתח את הלוח או בעל המערכת. נמחקים גם כל הזיכרונות, הלייקים והחברויות.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "הפעולה הצליחה (אין גוף לתשובה)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/join-code": {
+      "post": {
+        "tags": [
+          "Boards"
+        ],
+        "summary": "יצירת קוד הצטרפות חדש",
+        "description": "הקוד הישן מפסיק לעבוד. מי שכבר חבר נשאר חבר. רק מי שפתח את הלוח.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "מזהה הלוח",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "c2d4e6f8-1111-4a2b-9c3d-123456789abc"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "הקוד החדש",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinCode"
+                },
+                "example": {
+                  "joinCode": "M4R8TZ"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/members": {
+      "get": {
+        "tags": [
+          "Boards"
+        ],
+        "summary": "חברי הלוח",
+        "description": "שם ותמונה בלבד, בלי מיילים. חברי הלוח ובעל המערכת.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "מזהה הלוח",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "c2d4e6f8-1111-4a2b-9c3d-123456789abc"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "רשימת החברים",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Member"
+                  }
+                },
+                "example": [
+                  {
+                    "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                    "fullName": "נועה לוי",
+                    "avatarUrl": null,
+                    "isCreator": true,
+                    "joinedAt": "2026-10-01T10:05:00.000Z"
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/members/{userId}": {
+      "delete": {
+        "tags": [
+          "Boards"
+        ],
+        "summary": "הוצאת חבר מהלוח",
+        "description": "רק מי שפתח את הלוח. הזיכרונות שהחבר כתב נשארים בלוח.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "מזהה הלוח",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "c2d4e6f8-1111-4a2b-9c3d-123456789abc"
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "מזהה החבר שמוציאים",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "הפעולה הצליחה (אין גוף לתשובה)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/leave": {
+      "post": {
+        "tags": [
+          "Boards"
+        ],
+        "summary": "עזיבת הלוח",
+        "description": "חבר בלוח שאינו הפותח. הפותח לא יכול לעזוב, רק למחוק את הלוח.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "מזהה הלוח",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "c2d4e6f8-1111-4a2b-9c3d-123456789abc"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "הפעולה הצליחה (אין גוף לתשובה)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/invitations": {
+      "post": {
+        "tags": [
+          "Invitations"
+        ],
+        "summary": "שליחת הזמנות ללוח לפי מייל",
+        "description": "רק מי שפתח את הלוח (משתמש רגיל). שולחים מערך של 1 עד 20 כתובות. הכתובות עוברות trim ו־lowercase, וכפילויות מוסרות. אפשר להזמין גם כתובת שעוד לא רשומה. לא נשלח מייל בפועל: ההזמנה נשמרת ומופיעה למי שמתחבר או נרשם עם הכתובת. אף אחד לא מצטרף ללוח עד שהוא מאשר. לכל כתובת מוחזרת תוצאה: `INVITED` (נשמרה הזמנה), `ALREADY_INVITED` (כבר יש הזמנה ממתינה), `ALREADY_MEMBER` (כבר חבר בלוח), `SELF` (הכתובת של פותח הלוח), `NOT_ALLOWED` (אי אפשר להזמין את הכתובת הזו). שליחה חוזרת של אותה כתובת לא יוצרת הזמנה כפולה, ולכן בטוח לנסות שוב.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "מזהה הלוח",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "c2d4e6f8-1111-4a2b-9c3d-123456789abc"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInvitationsRequest"
+              },
+              "example": {
+                "emails": [
+                  "yossi@example.com",
+                  "new.friend@example.com"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "תוצאת השליחה לכל כתובת",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationsSendResult"
+                },
+                "example": {
+                  "boardId": "c2d4e6f8-1111-4a2b-9c3d-123456789abc",
+                  "invitedCount": 1,
+                  "results": [
+                    {
+                      "email": "yossi@example.com",
+                      "result": "ALREADY_MEMBER",
+                      "invitationId": null
+                    },
+                    {
+                      "email": "new.friend@example.com",
+                      "result": "INVITED",
+                      "invitationId": "7b3d9e1f-4444-4c2d-8e3f-0123456789ab"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/invitations": {
+      "get": {
+        "tags": [
+          "Invitations"
+        ],
+        "summary": "ההזמנות שלי",
+        "description": "רק הזמנות שנשלחו לכתובת המייל של המשתמש המחובר (לפי ה־Token, לא לפי פרמטר). ברירת המחדל היא הזמנות ממתינות. מהחדשה לישנה. משתמש רגיל בלבד.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "סטטוס ההזמנות",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "ACCEPTED",
+                "DECLINED"
+              ],
+              "default": "PENDING"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "מספר העמוד (מתחיל ב־1)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "כמה פריטים בעמוד (עד 50)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "רשימת ההזמנות",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationPage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": "7b3d9e1f-4444-4c2d-8e3f-0123456789ab",
+                      "status": "PENDING",
+                      "createdAt": "2026-10-26T18:00:00.000Z",
+                      "respondedAt": null,
+                      "board": {
+                        "id": "c2d4e6f8-1111-4a2b-9c3d-123456789abc",
+                        "name": "טיול שנתי י\"ב",
+                        "eventType": "TRIP",
+                        "eventTypeLabel": "טיול",
+                        "eventDate": "2026-04-14",
+                        "coverImageUrl": null
+                      },
+                      "inviter": {
+                        "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                        "fullName": "נועה לוי",
+                        "avatarUrl": null
+                      }
+                    }
+                  ],
+                  "page": 1,
+                  "limit": 20,
+                  "total": 1,
+                  "totalPages": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/invitations/pending-count": {
+      "get": {
+        "tags": [
+          "Invitations"
+        ],
+        "summary": "מספר ההזמנות הממתינות (לפעמון)",
+        "description": "מספר ההזמנות במצב PENDING שנשלחו לכתובת של המשתמש המחובר. משתמש רגיל בלבד.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "המספר",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingCount"
+                },
+                "example": {
+                  "count": 2
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/invitations/{id}/accept": {
+      "post": {
+        "tags": [
+          "Invitations"
+        ],
+        "summary": "אישור הזמנה",
+        "description": "רק מי שההזמנה נשלחה לכתובת שלו. בפעולה אחת: ההזמנה עוברת מ־PENDING ל־ACCEPTED והמשתמש נוסף לחברי הלוח. אם הוא כבר חבר (למשל הצטרף עם קוד), לא נוצרת חברות כפולה. מחזיר את הלוח, כמו הצטרפות עם קוד. הזמנה של מישהו אחר מחזירה 404 (`INVITATION_NOT_FOUND`). הזמנה שכבר נענתה מחזירה 409 (`INVITATION_ALREADY_ANSWERED`).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "מזהה ההזמנה",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "7b3d9e1f-4444-4c2d-8e3f-0123456789ab"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "הצטרפת ללוח",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Board"
+                },
+                "example": {
+                  "id": "c2d4e6f8-1111-4a2b-9c3d-123456789abc",
+                  "name": "טיול שנתי י\"ב",
+                  "description": "שלושה ימים בדרום",
+                  "eventType": "TRIP",
+                  "eventTypeLabel": "טיול",
+                  "eventDate": "2026-04-14",
+                  "coverImageId": null,
+                  "coverImageUrl": null,
+                  "creator": {
+                    "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                    "fullName": "נועה לוי",
+                    "avatarUrl": null
+                  },
+                  "isCreator": false,
+                  "joinCode": null,
+                  "membersCount": 3,
+                  "memoriesCount": 5,
+                  "lastActivityAt": "2026-10-20T18:30:00.000Z",
+                  "createdAt": "2026-10-01T10:05:00.000Z",
+                  "updatedAt": "2026-10-01T10:05:00.000Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/invitations/{id}/decline": {
+      "post": {
+        "tags": [
+          "Invitations"
+        ],
+        "summary": "דחיית הזמנה",
+        "description": "רק מי שההזמנה נשלחה לכתובת שלו. ההזמנה עוברת ל־DECLINED, והמשתמש לא מצטרף ללוח. אותן שגיאות כמו באישור.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "מזהה ההזמנה",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "7b3d9e1f-4444-4c2d-8e3f-0123456789ab"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ההזמנה נדחתה",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invitation"
+                },
+                "example": {
+                  "id": "7b3d9e1f-4444-4c2d-8e3f-0123456789ab",
+                  "status": "DECLINED",
+                  "createdAt": "2026-10-26T18:00:00.000Z",
+                  "respondedAt": "2026-10-26T19:00:00.000Z",
+                  "board": {
+                    "id": "c2d4e6f8-1111-4a2b-9c3d-123456789abc",
+                    "name": "טיול שנתי י\"ב",
+                    "eventType": "TRIP",
+                    "eventTypeLabel": "טיול",
+                    "eventDate": "2026-04-14",
+                    "coverImageUrl": null
+                  },
+                  "inviter": {
+                    "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                    "fullName": "נועה לוי",
+                    "avatarUrl": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/memories": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "מזהה הלוח",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "example": "c2d4e6f8-1111-4a2b-9c3d-123456789abc"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Memories"
+        ],
+        "summary": "זיכרונות הלוח",
+        "description": "חיפוש, סינון ומיון. חברי הלוח ובעל המערכת.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "חיפוש בכותרת ובתוכן",
+            "schema": {
+              "type": "string"
+            },
+            "example": "זריחה"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "סינון לפי סוג זיכרון",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PHOTO",
+                "PLACE",
+                "SUMMARY",
+                "JOKE",
+                "QUOTE"
+              ]
+            }
+          },
+          {
+            "name": "authorId",
+            "in": "query",
+            "required": false,
+            "description": "סינון לפי כותב",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "mine",
+            "in": "query",
+            "required": false,
+            "description": "true = רק הזיכרונות שלי",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "newest = החדשים קודם, mostLiked = הכי אהובים, happenedAt = ציר זמן לפי תאריך האירוע",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "mostLiked",
+                "happenedAt"
+              ],
+              "default": "newest"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "מספר העמוד (מתחיל ב־1)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "כמה פריטים בעמוד (עד 50)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "רשימת הזיכרונות",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryPage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": "a91b2c3d-2222-4e5f-8a9b-abcdefabcdef",
+                      "boardId": "c2d4e6f8-1111-4a2b-9c3d-123456789abc",
+                      "type": "SUMMARY",
+                      "typeLabel": "סיכום",
+                      "title": "הזריחה במצדה",
+                      "content": "קמנו בארבע בלילה ועלינו בשביל הנחש...",
+                      "imageId": "5e2a7c9d-3333-4b1c-9d2e-fedcbafedcba",
+                      "imageUrl": "/api/images/5e2a7c9d-3333-4b1c-9d2e-fedcbafedcba",
+                      "placeUrl": "https://maps.google.com/?q=Masada",
+                      "happenedAt": "2026-04-15",
+                      "author": {
+                        "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                        "fullName": "נועה לוי",
+                        "avatarUrl": null
+                      },
+                      "isMine": true,
+                      "likesCount": 7,
+                      "likedByMe": true,
+                      "createdAt": "2026-04-16T09:12:00.000Z",
+                      "updatedAt": "2026-04-16T09:12:00.000Z"
+                    }
+                  ],
+                  "page": 1,
+                  "limit": 20,
+                  "total": 1,
+                  "totalPages": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Memories"
+        ],
+        "summary": "הוספת זיכרון",
+        "description": "חברי הלוח בלבד. הכותב נקבע לפי ה־Token. בזיכרון מסוג PHOTO חובה `imageId`. אם אותה תמונה (לפי התוכן שלה, לא לפי השם) כבר קיימת בלוח, מתקבל 409.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMemoryRequest"
+              },
+              "example": {
+                "title": "הזריחה במצדה",
+                "content": "קמנו בארבע בלילה ועלינו בשביל הנחש...",
+                "type": "SUMMARY",
+                "imageId": "5e2a7c9d-3333-4b1c-9d2e-fedcbafedcba",
+                "placeUrl": "https://maps.google.com/?q=Masada",
+                "happenedAt": "2026-04-15"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "הזיכרון נוסף",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
+                },
+                "example": {
+                  "id": "a91b2c3d-2222-4e5f-8a9b-abcdefabcdef",
+                  "boardId": "c2d4e6f8-1111-4a2b-9c3d-123456789abc",
+                  "type": "SUMMARY",
+                  "typeLabel": "סיכום",
+                  "title": "הזריחה במצדה",
+                  "content": "קמנו בארבע בלילה ועלינו בשביל הנחש...",
+                  "imageId": "5e2a7c9d-3333-4b1c-9d2e-fedcbafedcba",
+                  "imageUrl": "/api/images/5e2a7c9d-3333-4b1c-9d2e-fedcbafedcba",
+                  "placeUrl": "https://maps.google.com/?q=Masada",
+                  "happenedAt": "2026-04-15",
+                  "author": {
+                    "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                    "fullName": "נועה לוי",
+                    "avatarUrl": null
+                  },
+                  "isMine": true,
+                  "likesCount": 7,
+                  "likedByMe": true,
+                  "createdAt": "2026-04-16T09:12:00.000Z",
+                  "updatedAt": "2026-04-16T09:12:00.000Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/memories/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "מזהה הזיכרון",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "example": "a91b2c3d-2222-4e5f-8a9b-abcdefabcdef"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Memories"
+        ],
+        "summary": "זיכרון אחד",
+        "description": "חברי הלוח ובעל המערכת.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "הזיכרון",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
+                },
+                "example": {
+                  "id": "a91b2c3d-2222-4e5f-8a9b-abcdefabcdef",
+                  "boardId": "c2d4e6f8-1111-4a2b-9c3d-123456789abc",
+                  "type": "SUMMARY",
+                  "typeLabel": "סיכום",
+                  "title": "הזריחה במצדה",
+                  "content": "קמנו בארבע בלילה ועלינו בשביל הנחש...",
+                  "imageId": "5e2a7c9d-3333-4b1c-9d2e-fedcbafedcba",
+                  "imageUrl": "/api/images/5e2a7c9d-3333-4b1c-9d2e-fedcbafedcba",
+                  "placeUrl": "https://maps.google.com/?q=Masada",
+                  "happenedAt": "2026-04-15",
+                  "author": {
+                    "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                    "fullName": "נועה לוי",
+                    "avatarUrl": null
+                  },
+                  "isMine": true,
+                  "likesCount": 7,
+                  "likedByMe": true,
+                  "createdAt": "2026-04-16T09:12:00.000Z",
+                  "updatedAt": "2026-04-16T09:12:00.000Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Memories"
+        ],
+        "summary": "עריכת זיכרון",
+        "description": "רק מי שכתב את הזיכרון. שולחים רק את השדות שרוצים לשנות.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMemoryRequest"
+              },
+              "example": {
+                "title": "הזריחה הכי יפה במצדה"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "הזיכרון עודכן",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
+                },
+                "example": {
+                  "id": "a91b2c3d-2222-4e5f-8a9b-abcdefabcdef",
+                  "boardId": "c2d4e6f8-1111-4a2b-9c3d-123456789abc",
+                  "type": "SUMMARY",
+                  "typeLabel": "סיכום",
+                  "title": "הזריחה במצדה",
+                  "content": "קמנו בארבע בלילה ועלינו בשביל הנחש...",
+                  "imageId": "5e2a7c9d-3333-4b1c-9d2e-fedcbafedcba",
+                  "imageUrl": "/api/images/5e2a7c9d-3333-4b1c-9d2e-fedcbafedcba",
+                  "placeUrl": "https://maps.google.com/?q=Masada",
+                  "happenedAt": "2026-04-15",
+                  "author": {
+                    "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                    "fullName": "נועה לוי",
+                    "avatarUrl": null
+                  },
+                  "isMine": true,
+                  "likesCount": 7,
+                  "likedByMe": true,
+                  "createdAt": "2026-04-16T09:12:00.000Z",
+                  "updatedAt": "2026-04-16T09:12:00.000Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Memories"
+        ],
+        "summary": "מחיקת זיכרון",
+        "description": "מי שכתב את הזיכרון, או בעל המערכת.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "הפעולה הצליחה (אין גוף לתשובה)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/memories/{id}/like": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "מזהה הזיכרון",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "example": "a91b2c3d-2222-4e5f-8a9b-abcdefabcdef"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Memories"
+        ],
+        "summary": "לייק",
+        "description": "חברי הלוח. לייק כפול לא נספר פעמיים.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "מצב הלייקים",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LikeSummary"
+                },
+                "example": {
+                  "memoryId": "a91b2c3d-2222-4e5f-8a9b-abcdefabcdef",
+                  "likesCount": 8,
+                  "likedByMe": true
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Memories"
+        ],
+        "summary": "ביטול לייק",
+        "description": "חברי הלוח.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "מצב הלייקים",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LikeSummary"
+                },
+                "example": {
+                  "memoryId": "a91b2c3d-2222-4e5f-8a9b-abcdefabcdef",
+                  "likesCount": 7,
+                  "likedByMe": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "כל המשתמשים",
+        "description": "בעל המערכת בלבד.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "חיפוש לפי שם או מייל",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "blocked",
+            "in": "query",
+            "required": false,
+            "description": "true = רק חסומים, false = רק פעילים",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "מספר העמוד (מתחיל ב־1)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "כמה פריטים בעמוד (עד 50)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "רשימת המשתמשים",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserPage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                      "fullName": "נועה לוי",
+                      "email": "noa@example.com",
+                      "role": "USER",
+                      "avatarImageId": null,
+                      "avatarUrl": null,
+                      "isBlocked": false,
+                      "createdAt": "2026-10-01T10:00:00.000Z",
+                      "boardsCreated": 1,
+                      "boardsJoined": 2,
+                      "memoriesCount": 5
+                    }
+                  ],
+                  "page": 1,
+                  "limit": 20,
+                  "total": 1,
+                  "totalPages": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/block": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "חסימה או שחרור של משתמש",
+        "description": "משתמש חסום לא יכול להתחבר, וה־Token שלו מפסיק לעבוד מיד. בעל המערכת בלבד.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "מזהה המשתמש",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockUserRequest"
+              },
+              "example": {
+                "isBlocked": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "המשתמש עודכן",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                },
+                "example": {
+                  "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                  "fullName": "נועה לוי",
+                  "email": "noa@example.com",
+                  "role": "USER",
+                  "avatarImageId": null,
+                  "avatarUrl": null,
+                  "isBlocked": true,
+                  "createdAt": "2026-10-01T10:00:00.000Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "מחיקת משתמש",
+        "description": "נמחק כל מה ששייך לו: הלוחות שפתח, הזיכרונות, הלייקים, החברויות והתמונות. בעל המערכת בלבד. אי אפשר למחוק מנהל.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "מזהה המשתמש",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "הפעולה הצליחה (אין גוף לתשובה)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/admin/boards": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "כל הלוחות באתר",
+        "description": "בעל המערכת בלבד. כדי לראות לוח מסוים משתמשים ב־`GET /api/boards/{id}` וב־`GET /api/boards/{id}/memories`.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "חיפוש בשם ובתיאור",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventType",
+            "in": "query",
+            "required": false,
+            "description": "סינון לפי סוג אירוע",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "TRIP",
+                "GRADUATION",
+                "CAMP",
+                "FAMILY",
+                "OTHER"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "מספר העמוד (מתחיל ב־1)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "כמה פריטים בעמוד (עד 50)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "רשימת הלוחות",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardPage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": "c2d4e6f8-1111-4a2b-9c3d-123456789abc",
+                      "name": "טיול שנתי י\"ב",
+                      "description": "שלושה ימים בדרום",
+                      "eventType": "TRIP",
+                      "eventTypeLabel": "טיול",
+                      "eventDate": "2026-04-14",
+                      "coverImageId": null,
+                      "coverImageUrl": null,
+                      "creator": {
+                        "id": "6f1c2b8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+                        "fullName": "נועה לוי",
+                        "avatarUrl": null
+                      },
+                      "isCreator": false,
+                      "joinCode": null,
+                      "membersCount": 3,
+                      "memoriesCount": 5,
+                      "lastActivityAt": "2026-10-20T18:30:00.000Z",
+                      "createdAt": "2026-10-01T10:05:00.000Z",
+                      "updatedAt": "2026-10-01T10:05:00.000Z"
+                    }
+                  ],
+                  "page": 1,
+                  "limit": 20,
+                  "total": 1,
+                  "totalPages": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "הדביקי כאן את ה־token מתשובת ההתחברות (בלי המילה Bearer)."
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "הנתונים שנשלחו לא תקינים",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "הנתונים שנשלחו לא תקינים",
+                "details": [
+                  {
+                    "location": "body",
+                    "field": "email",
+                    "message": "כתובת המייל לא תקינה"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "אין Token, ה־Token לא תקין, או שפג תוקפו",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "TOKEN_MISSING",
+                "message": "חסר Token. יש להתחבר ולשלוח Authorization: Bearer <token>"
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "מחובר, אבל אין הרשאה לפעולה (או שהחשבון חסום)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "NOT_A_MEMBER",
+                "message": "אינך חבר בלוח הזה"
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "הפריט לא נמצא",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "BOARD_NOT_FOUND",
+                "message": "הלוח לא נמצא"
+              }
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "התנגשות: מייל תפוס, כבר חבר בלוח, או תמונה שכבר קיימת בלוח",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "DUPLICATE_IMAGE",
+                "message": "התמונה הזו כבר קיימת בלוח"
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "קוד קבוע באנגלית, לשימוש בקוד"
+              },
+              "message": {
+                "type": "string",
+                "description": "הודעה בעברית להצגה למשתמש"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "location": {
+                      "type": "string",
+                      "enum": [
+                        "body",
+                        "query",
+                        "params"
+                      ]
+                    },
+                    "field": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ]
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unreachable"
+            ]
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Option": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "Options": {
+        "type": "object",
+        "properties": {
+          "memoryTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          "eventTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            }
+          }
+        }
+      },
+      "UserProfile": {
+        "type": "object",
+        "description": "פרופיל מלא. מוחזר רק למשתמש עצמו ולבעל המערכת. אף פעם לא כולל סיסמה.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "USER",
+              "ADMIN"
+            ]
+          },
+          "avatarImageId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "כתובת יחסית, למשל /api/images/<id>"
+          },
+          "isBlocked": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PublicUser": {
+        "type": "object",
+        "description": "מה שחברים אחרים רואים: שם ותמונה בלבד.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "AdminUser": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/UserProfile"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "boardsCreated": {
+                "type": "integer"
+              },
+              "boardsJoined": {
+                "type": "integer"
+              },
+              "memoriesCount": {
+                "type": "integer"
+              }
+            }
+          }
+        ]
+      },
+      "AdminUserPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "limit",
+          "total",
+          "totalPages"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUser"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer",
+            "description": "כמה פריטים יש בסך הכול"
+          },
+          "totalPages": {
+            "type": "integer"
+          }
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "JWT Access Token"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserProfile"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": [
+          "fullName",
+          "email",
+          "password"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 60
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 72
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateProfileRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "לפחות שדה אחד",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 60
+          },
+          "avatarImageId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "id מ־POST /api/images, או null למחיקה"
+          }
+        }
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "currentPassword": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 72
+          }
+        }
+      },
+      "ImageUpload": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string",
+            "description": "כתובת יחסית לתמונה"
+          },
+          "mimeType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ]
+          },
+          "sizeBytes": {
+            "type": "integer"
+          },
+          "contentHash": {
+            "type": "string",
+            "description": "טביעת אצבע (SHA-256) של תוכן התמונה"
+          }
+        }
+      },
+      "Board": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "TRIP",
+              "GRADUATION",
+              "CAMP",
+              "FAMILY",
+              "OTHER"
+            ]
+          },
+          "eventTypeLabel": {
+            "type": "string"
+          },
+          "eventDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "coverImageId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "coverImageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "creator": {
+            "$ref": "#/components/schemas/PublicUser"
+          },
+          "isCreator": {
+            "type": "boolean",
+            "description": "האם המשתמש המחובר פתח את הלוח"
+          },
+          "joinCode": {
+            "type": "string",
+            "nullable": true,
+            "description": "מוחזר רק לפותח הלוח"
+          },
+          "membersCount": {
+            "type": "integer"
+          },
+          "memoriesCount": {
+            "type": "integer"
+          },
+          "lastActivityAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BoardPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "limit",
+          "total",
+          "totalPages"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Board"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer",
+            "description": "כמה פריטים יש בסך הכול"
+          },
+          "totalPages": {
+            "type": "integer"
+          }
+        }
+      },
+      "CreateBoardRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "eventType",
+          "eventDate"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 1000
+          },
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "TRIP",
+              "GRADUATION",
+              "CAMP",
+              "FAMILY",
+              "OTHER"
+            ]
+          },
+          "eventDate": {
+            "type": "string",
+            "format": "date",
+            "description": "YYYY-MM-DD"
+          },
+          "coverImageId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "id מ־POST /api/images"
+          },
+          "emails": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "type": "string",
+              "format": "email",
+              "maxLength": 254
+            },
+            "description": "לא חובה. כתובות להזמנה. עד 20, לא תלוי באותיות גדולות/קטנות, כפילויות מוסרות."
+          }
+        }
+      },
+      "BoardWithInvitations": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Board"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "invitations": {
+                "type": "object",
+                "description": "מופיע רק כששלחו emails עם כתובת אחת לפחות",
+                "properties": {
+                  "invitedCount": {
+                    "type": "integer"
+                  },
+                  "results": {
+                    "$ref": "#/components/schemas/InvitationsSendResult/properties/results"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "UpdateBoardRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "לפחות שדה אחד",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 1000
+          },
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "TRIP",
+              "GRADUATION",
+              "CAMP",
+              "FAMILY",
+              "OTHER"
+            ]
+          },
+          "eventDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "coverImageId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          }
+        }
+      },
+      "JoinBoardRequest": {
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 6,
+            "description": "לא תלוי באותיות גדולות/קטנות"
+          }
+        }
+      },
+      "JoinCode": {
+        "type": "object",
+        "properties": {
+          "joinCode": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateInvitationsRequest": {
+        "type": "object",
+        "required": [
+          "emails"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "emails": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "type": "string",
+              "format": "email",
+              "maxLength": 254
+            },
+            "description": "לא תלוי באותיות גדולות/קטנות. כפילויות מוסרות."
+          }
+        }
+      },
+      "InvitationsSendResult": {
+        "type": "object",
+        "properties": {
+          "boardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "invitedCount": {
+            "type": "integer",
+            "description": "כמה הזמנות חדשות נשמרו"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "הכתובת אחרי נרמול"
+                },
+                "result": {
+                  "type": "string",
+                  "enum": [
+                    "INVITED",
+                    "ALREADY_INVITED",
+                    "ALREADY_MEMBER",
+                    "SELF",
+                    "NOT_ALLOWED"
+                  ]
+                },
+                "invitationId": {
+                  "type": "string",
+                  "nullable": true,
+                  "format": "uuid",
+                  "description": "יש ערך רק כשקיימת הזמנה ממתינה"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Invitation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "DECLINED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "respondedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "מתי אישרו או דחו (null כל עוד ממתינה)"
+          },
+          "board": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "eventType": {
+                "type": "string",
+                "enum": [
+                  "TRIP",
+                  "GRADUATION",
+                  "CAMP",
+                  "FAMILY",
+                  "OTHER"
+                ]
+              },
+              "eventTypeLabel": {
+                "type": "string"
+              },
+              "eventDate": {
+                "type": "string",
+                "format": "date"
+              },
+              "coverImageUrl": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "inviter": {
+            "$ref": "#/components/schemas/PublicUser"
+          }
+        }
+      },
+      "InvitationPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "limit",
+          "total",
+          "totalPages"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Invitation"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer",
+            "description": "כמה פריטים יש בסך הכול"
+          },
+          "totalPages": {
+            "type": "integer"
+          }
+        }
+      },
+      "PendingCount": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          }
+        }
+      },
+      "Member": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PublicUser"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "isCreator": {
+                "type": "boolean"
+              },
+              "joinedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        ]
+      },
+      "Memory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "PHOTO",
+              "PLACE",
+              "SUMMARY",
+              "JOKE",
+              "QUOTE"
+            ]
+          },
+          "typeLabel": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "imageId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "placeUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "happenedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "author": {
+            "$ref": "#/components/schemas/PublicUser"
+          },
+          "isMine": {
+            "type": "boolean",
+            "description": "האם המשתמש המחובר כתב את הזיכרון (ויכול לערוך)"
+          },
+          "likesCount": {
+            "type": "integer"
+          },
+          "likedByMe": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MemoryPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "limit",
+          "total",
+          "totalPages"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Memory"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer",
+            "description": "כמה פריטים יש בסך הכול"
+          },
+          "totalPages": {
+            "type": "integer"
+          }
+        }
+      },
+      "CreateMemoryRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "content",
+          "type"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "PHOTO",
+              "PLACE",
+              "SUMMARY",
+              "JOKE",
+              "QUOTE"
+            ]
+          },
+          "imageId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "חובה כש־type הוא PHOTO"
+          },
+          "placeUrl": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "description": "קישור http/https, למשל מפות גוגל"
+          },
+          "happenedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date",
+            "description": "YYYY-MM-DD"
+          }
+        }
+      },
+      "UpdateMemoryRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "לפחות שדה אחד",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "PHOTO",
+              "PLACE",
+              "SUMMARY",
+              "JOKE",
+              "QUOTE"
+            ]
+          },
+          "imageId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "placeUrl": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri"
+          },
+          "happenedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          }
+        }
+      },
+      "LikeSummary": {
+        "type": "object",
+        "properties": {
+          "memoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "likesCount": {
+            "type": "integer"
+          },
+          "likedByMe": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BlockUserRequest": {
+        "type": "object",
+        "required": [
+          "isBlocked"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "isBlocked": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

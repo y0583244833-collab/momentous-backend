@@ -1,0 +1,171 @@
+// Prisma schema for the Momenta backend (shared memory boards).
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum EventType {
+  TRIP
+  GRADUATION
+  CAMP
+  FAMILY
+  OTHER
+}
+
+enum MemoryType {
+  PHOTO
+  PLACE
+  SUMMARY
+  JOKE
+  QUOTE
+}
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  fullName      String   @db.VarChar(60)
+  email         String   @unique @db.VarChar(254)
+  passwordHash  String
+  role          Role     @default(USER)
+  isBlocked     Boolean  @default(false)
+  avatarImageId String?  @db.Uuid
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  avatarImage     Image?            @relation("UserAvatar", fields: [avatarImageId], references: [id], onDelete: SetNull)
+  uploadedImages  Image[]           @relation("ImageUploader")
+  createdBoards   Board[]           @relation("BoardCreator")
+  memberships     BoardMember[]
+  memories        Memory[]
+  likes           Like[]
+  sentInvitations BoardInvitation[] @relation("InvitationSender")
+
+  @@index([role])
+}
+
+model Board {
+  id             String    @id @default(uuid()) @db.Uuid
+  name           String    @db.VarChar(80)
+  description    String?   @db.VarChar(1000)
+  eventType      EventType
+  eventDate      DateTime  @db.Date
+  coverImageId   String?   @db.Uuid
+  joinCode       String    @unique @db.VarChar(6)
+  creatorId      String    @db.Uuid
+  lastActivityAt DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  creator     User              @relation("BoardCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  coverImage  Image?            @relation("BoardCover", fields: [coverImageId], references: [id], onDelete: SetNull)
+  members     BoardMember[]
+  memories    Memory[]
+  invitations BoardInvitation[] @relation("BoardInvitations")
+
+  @@index([creatorId])
+  @@index([eventDate])
+}
+
+model BoardMember {
+  boardId  String   @db.Uuid
+  userId   String   @db.Uuid
+  joinedAt DateTime @default(now())
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([boardId, userId])
+  @@index([userId])
+}
+
+model Memory {
+  id         String     @id @default(uuid()) @db.Uuid
+  boardId    String     @db.Uuid
+  authorId   String     @db.Uuid
+  type       MemoryType
+  title      String     @db.VarChar(120)
+  content    String     @db.VarChar(5000)
+  imageId    String?    @db.Uuid
+  placeUrl   String?    @db.VarChar(2048)
+  happenedAt DateTime?  @db.Date
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  board  Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  image  Image? @relation("MemoryImage", fields: [imageId], references: [id], onDelete: SetNull)
+  likes  Like[]
+
+  @@index([boardId, createdAt])
+  @@index([authorId])
+}
+
+model Like {
+  memoryId  String   @db.Uuid
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  memory Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([memoryId, userId])
+  @@index([userId])
+}
+
+model Image {
+  id          String   @id @default(uuid()) @db.Uuid
+  data        Bytes
+  mimeType    String   @db.VarChar(20)
+  sizeBytes   Int
+  contentHash String   @db.Char(64)
+  uploaderId  String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  uploader    User     @relation("ImageUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
+  usersAvatar User[]   @relation("UserAvatar")
+  boardsCover Board[]  @relation("BoardCover")
+  memories    Memory[] @relation("MemoryImage")
+
+  @@index([contentHash])
+  @@index([uploaderId])
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+/// An invitation to a board, sent by the board creator to an email address.
+/// The email does not have to belong to a registered user yet: after signing up or
+/// logging in with that email, the user sees the invitation and accepts or declines it.
+/// There is exactly one row per board + email (unique). Inviting the same email again
+/// after an answer turns the same row back to PENDING, so two pending invitations
+/// for the same board and email can never exist, even with parallel requests.
+model BoardInvitation {
+  id           String           @id @default(uuid()) @db.Uuid
+  boardId      String           @db.Uuid
+  inviterId    String           @db.Uuid
+  inviteeEmail String           @db.VarChar(254)
+  status       InvitationStatus @default(PENDING)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  respondedAt  DateTime?
+
+  board   Board @relation("BoardInvitations", fields: [boardId], references: [id], onDelete: Cascade)
+  inviter User  @relation("InvitationSender", fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, inviteeEmail])
+  @@index([inviteeEmail, status])
+  @@index([inviterId])
+}
