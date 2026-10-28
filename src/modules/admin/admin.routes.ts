@@ -17,3 +17,4 @@ adminRouter.patch(
 );
 adminRouter.delete('/users/:id', validate({ params: userIdParams }), asyncHandler(controller.deleteUser));
 adminRouter.get('/boards', validate({ query: listAllBoardsQuery }), asyncHandler(controller.listBoards));
+adminRouter.get('/stats', asyncHandler(controller.stats));

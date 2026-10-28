@@ -1,6 +1,6 @@
 # כל כתובות השרת: ניתובים ומטרות
 
-רשימה מסודרת של כל 35 הכתובות בשרת Momenta, לפי נושאים.
+רשימה מסודרת של כל 36 הכתובות בשרת Momenta, לפי נושאים.
 כל הכתובות מתחילות ב־`/api`. אפשר לנסות כל אחת מהן ב־Swagger בכתובת `/api-docs`.
 
 **מקרא לעמודה "מי":**
@@ -87,6 +87,7 @@
 | 33 | PATCH | `/api/admin/users/:id/block` | חסימה או שחרור של משתמש | מנהל | `{ isBlocked }` | `User` |
 | 34 | DELETE | `/api/admin/users/:id` | מחיקת משתמש | מנהל | — | 204 |
 | 35 | GET | `/api/admin/boards` | כל הלוחות במערכת | מנהל | query: `q, eventType, page, limit` | `Page<Board>` |
+| 36 | GET | `/api/admin/stats` | סטטיסטיקות ללוח הבקרה: משתמשים, קבוצות וזיכרונות | מנהל | — | `{ usersCount, groupsCount, memoriesCount }` |
 
 ---
 

@@ -2518,6 +2518,43 @@
           }
         }
       }
+    },
+    "/api/admin/stats": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "סטטיסטיקות ללוח הבקרה",
+        "description": "מספר המשתמשים, הקבוצות (לוחות) והזיכרונות במערכת כולה. בעל המערכת בלבד.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "הסטטיסטיקות",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminStats"
+                },
+                "example": {
+                  "usersCount": 42,
+                  "groupsCount": 7,
+                  "memoriesCount": 128
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2824,6 +2861,28 @@
           },
           "totalPages": {
             "type": "integer"
+          }
+        }
+      },
+      "AdminStats": {
+        "type": "object",
+        "required": [
+          "usersCount",
+          "groupsCount",
+          "memoriesCount"
+        ],
+        "properties": {
+          "usersCount": {
+            "type": "integer",
+            "description": "כמה משתמשים יש במערכת"
+          },
+          "groupsCount": {
+            "type": "integer",
+            "description": "כמה קבוצות (לוחות) יש במערכת"
+          },
+          "memoriesCount": {
+            "type": "integer",
+            "description": "כמה זיכרונות יש במערכת"
           }
         }
       },

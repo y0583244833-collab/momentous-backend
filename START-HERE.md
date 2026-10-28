@@ -219,7 +219,7 @@ https://momenta-api.onrender.com
 
 פתחי: `https://momenta-api.onrender.com/api-docs`
 
-יופיע Swagger עם כל 35 הכתובות, מחולקות לקבוצות (Auth, Boards, Invitations, Memories ועוד).
+יופיע Swagger עם כל 36 הכתובות, מחולקות לקבוצות (Auth, Boards, Invitations, Memories ועוד).
 
 ### 3. התחברות מתוך Swagger
 

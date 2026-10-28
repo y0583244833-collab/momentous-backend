@@ -19,3 +19,7 @@ export async function deleteUser(req: Request, res: Response) {
 export async function listBoards(req: Request, res: Response) {
   res.json(await adminService.listAllBoards(currentUser(req).id, req.query as unknown as ListAllBoardsQuery));
 }
+
+export async function stats(_req: Request, res: Response) {
+  res.json(await adminService.getStats());
+}

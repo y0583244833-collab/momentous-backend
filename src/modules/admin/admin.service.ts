@@ -78,3 +78,13 @@ export async function listAllBoards(adminId: string, query: ListAllBoardsQuery) 
     total,
   );
 }
+
+/** Totals for the admin dashboard: all users, groups (boards) and memories in the database. */
+export async function getStats() {
+  const [usersCount, groupsCount, memoriesCount] = await Promise.all([
+    prisma.user.count(),
+    prisma.board.count(),
+    prisma.memory.count(),
+  ]);
+  return { usersCount, groupsCount, memoriesCount };
+}

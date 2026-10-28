@@ -41,6 +41,7 @@ const ROUTES = [
   ['patch', '/api/admin/users/{id}/block'],
   ['delete', '/api/admin/users/{id}'],
   ['get', '/api/admin/boards'],
+  ['get', '/api/admin/stats'],
 ] as const;
 
 const PUBLIC = new Set(['/api/health', '/api/options', '/api/auth/register', '/api/auth/login', '/api/images/{id}']);
@@ -62,7 +63,7 @@ describe('OpenAPI / Swagger', () => {
         .map((m) => `${m} ${path}`),
     );
     expect(documented.sort()).toEqual(ROUTES.map(([m, p]) => `${m} ${p}`).sort());
-    expect(ROUTES).toHaveLength(35);
+    expect(ROUTES).toHaveLength(36);
   });
 
   it('every documented route really exists on the server', async () => {

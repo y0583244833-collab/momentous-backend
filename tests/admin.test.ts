@@ -7,6 +7,7 @@ describe('admin permissions', () => {
     const { user, token } = await userWithToken();
     expect((await api().get('/api/admin/users').set(auth(token))).status).toBe(403);
     expect((await api().get('/api/admin/boards').set(auth(token))).status).toBe(403);
+    expect((await api().get('/api/admin/stats').set(auth(token))).status).toBe(403);
     expect((await api().patch(`/api/admin/users/${user.id}/block`).set(auth(token)).send({ isBlocked: true })).status).toBe(403);
     expect((await api().delete(`/api/admin/users/${user.id}`).set(auth(token))).status).toBe(403);
   });
@@ -34,6 +35,24 @@ describe('admin permissions', () => {
     expect((await api().post(`/api/memories/${memory.id}/like`).set(auth(admin.token))).status).toBe(403);
     expect((await api().patch(`/api/memories/${memory.id}`).set(auth(admin.token)).send({ title: 'אאא' })).status).toBe(403);
     expect((await api().patch(`/api/boards/${board.id}`).set(auth(admin.token)).send({ name: 'אאא' })).status).toBe(403);
+  });
+});
+
+describe('admin stats', () => {
+  it('returns the real counts of users, groups and memories', async () => {
+    const admin = await userWithToken({ role: 'ADMIN' });
+    const owner = await userWithToken();
+    const board = await createBoard(owner.token);
+    await createMemory(owner.token, board.id);
+    await createMemory(owner.token, board.id);
+
+    const res = await api().get('/api/admin/stats').set(auth(admin.token));
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ usersCount: 2, groupsCount: 1, memoriesCount: 2 });
+  });
+
+  it('returns 401 without a token', async () => {
+    expect((await api().get('/api/admin/stats')).status).toBe(401);
   });
 });
 

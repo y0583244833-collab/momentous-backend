@@ -876,6 +876,19 @@ export const openApiDocument = {
         },
       },
     },
+    '/api/admin/stats': {
+      get: {
+        tags: ['Admin'],
+        summary: 'סטטיסטיקות ללוח הבקרה',
+        description: 'מספר המשתמשים, הקבוצות (לוחות) והזיכרונות במערכת כולה. בעל המערכת בלבד.',
+        security: bearer,
+        responses: {
+          '200': ok('הסטטיסטיקות', ref('AdminStats'), { usersCount: 42, groupsCount: 7, memoriesCount: 128 }),
+          '401': errorRef('Unauthorized'),
+          '403': errorRef('Forbidden'),
+        },
+      },
+    },
   },
   components: {
     securitySchemes: {
@@ -998,6 +1011,15 @@ export const openApiDocument = {
         ],
       },
       AdminUserPage: pageSchema('AdminUser'),
+      AdminStats: {
+        type: 'object',
+        required: ['usersCount', 'groupsCount', 'memoriesCount'],
+        properties: {
+          usersCount: { type: 'integer', description: 'כמה משתמשים יש במערכת' },
+          groupsCount: { type: 'integer', description: 'כמה קבוצות (לוחות) יש במערכת' },
+          memoriesCount: { type: 'integer', description: 'כמה זיכרונות יש במערכת' },
+        },
+      },
       AuthResponse: {
         type: 'object',
         properties: { token: { type: 'string', description: 'JWT Access Token' }, user: ref('UserProfile') },

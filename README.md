@@ -6,7 +6,7 @@
 >
 > **כותבת את צד ה־React?** כל מה שצריך נמצא ב־[FRONTEND-API-GUIDE.md](FRONTEND-API-GUIDE.md).
 >
-> **רשימה מסודרת של כל 35 הכתובות בשרת:** [API-ENDPOINTS.md](API-ENDPOINTS.md).
+> **רשימה מסודרת של כל 36 הכתובות בשרת:** [API-ENDPOINTS.md](API-ENDPOINTS.md).
 >
 > **הזמנות לפי מייל ופעמון ההזמנות:** [INVITATIONS.md](INVITATIONS.md).
 
